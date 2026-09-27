@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WallpaperPeek;
+namespace WallpaperCrop;
 
 internal static class NativeMethods
 {

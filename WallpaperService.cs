@@ -2,7 +2,7 @@ using System.Drawing.Drawing2D;
 using System.Diagnostics;
 using System.Text;
 
-namespace WallpaperPeek;
+namespace WallpaperCrop;
 
 internal static class WallpaperService
 {

@@ -1,4 +1,4 @@
-namespace WallpaperPeek;
+namespace WallpaperCrop;
 
 internal sealed class MainForm : Form
 {
@@ -15,7 +15,7 @@ internal sealed class MainForm : Form
     public MainForm()
     {
         ShowInTaskbar = false; WindowState = FormWindowState.Minimized; Opacity = 0;
-        _tray = new NotifyIcon { Icon = SystemIcons.Information, Text = "WallpaperPeek", Visible = true };
+        _tray = new NotifyIcon { Icon = SystemIcons.Information, Text = "WallpaperCrop", Visible = true };
         var menu = new ContextMenuStrip();
         menu.Items.Add("框选壁纸区域 (Ctrl+Alt+Shift+A)", null, (_, _) => StartSelection());
         menu.Items.Add("隐藏/恢复浮窗 (Ctrl+Alt+Shift+Z)", null, (_, _) => TogglePreview());
@@ -59,7 +59,7 @@ internal sealed class MainForm : Form
     private void ShowRegion(Rectangle region)
     {
         try { _lastRegion = region; ShowImage(WallpaperService.CaptureDesktopRegion(region)); }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "WallpaperPeek", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "WallpaperCrop", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
     private void ShowImage(Bitmap image, Size? initialSize = null)
     {
@@ -70,14 +70,14 @@ internal sealed class MainForm : Form
     private void ShowSlot(int slot)
     {
         var region = _config.Regions.FirstOrDefault(x => x.Slot == slot);
-        if (region is null) { _tray.ShowBalloonTip(1500, "WallpaperPeek", $"编号 {slot} 还没有保存区域。", ToolTipIcon.Info); return; }
+        if (region is null) { _tray.ShowBalloonTip(1500, "WallpaperCrop", $"编号 {slot} 还没有保存区域。", ToolTipIcon.Info); return; }
         try
         {
             _lastRegion = WallpaperService.Denormalize(region);
             var savedSize = region.DisplayWidth >= 80 && region.DisplayHeight >= 80 ? new Size(region.DisplayWidth, region.DisplayHeight) : (Size?)null;
             ShowImage(WallpaperService.CaptureDesktopRegion(_lastRegion.Value), savedSize);
         }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "WallpaperPeek", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "WallpaperCrop", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
     private void TogglePreview()
     {
@@ -86,10 +86,10 @@ internal sealed class MainForm : Form
     }
     private void ToggleClickThrough()
     {
-        if (_preview is null) { _tray.ShowBalloonTip(1500, "WallpaperPeek", "请先框选一个区域。", ToolTipIcon.Info); return; }
+        if (_preview is null) { _tray.ShowBalloonTip(1500, "WallpaperCrop", "请先框选一个区域。", ToolTipIcon.Info); return; }
         _preview.ToggleClickThrough();
         UpdateClickThroughMenuText();
-        _tray.ShowBalloonTip(1500, "WallpaperPeek", _preview.IsClickThrough ? "已开启点击穿透。" : "已关闭点击穿透。", ToolTipIcon.Info);
+        _tray.ShowBalloonTip(1500, "WallpaperCrop", _preview.IsClickThrough ? "已开启点击穿透。" : "已关闭点击穿透。", ToolTipIcon.Info);
     }
     private void UpdateClickThroughMenuText() => _clickThroughMenu.Text = _preview?.IsClickThrough == true ? "关闭鼠标点击穿透" : "开启鼠标点击穿透";
     private void SetStartup(bool enabled)
@@ -106,12 +106,12 @@ internal sealed class MainForm : Form
             _changingStartup = true;
             _startupMenu.Checked = !enabled;
             _changingStartup = false;
-            MessageBox.Show(ex.Message, "WallpaperPeek", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(ex.Message, "WallpaperCrop", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
     private void ResetAllSettings()
     {
-        var result = MessageBox.Show("将关闭当前预览、关闭开机自启动，并清空 Ctrl+Alt+1 至 9 的所有已保存预设。\n\n确定继续吗？", "重置 WallpaperPeek", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+        var result = MessageBox.Show("将关闭当前预览、关闭开机自启动，并清空 Ctrl+Alt+1 至 9 的所有已保存预设。\n\n确定继续吗？", "重置 WallpaperCrop", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
         if (result != DialogResult.Yes) return;
         try
         {
@@ -125,14 +125,14 @@ internal sealed class MainForm : Form
             _preview?.Close();
             _preview = null;
             _lastRegion = null;
-            _tray.ShowBalloonTip(2000, "WallpaperPeek", "已重置所有设置并清空预设。", ToolTipIcon.Info);
+            _tray.ShowBalloonTip(2000, "WallpaperCrop", "已重置所有设置并清空预设。", ToolTipIcon.Info);
         }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "WallpaperPeek", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "WallpaperCrop", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
-    private static void ShowHelp() => MessageBox.Show("WallpaperPeek\n\nCtrl+Alt+Shift+A：框选壁纸区域\nCtrl+Alt+Shift+S：保存最后区域\nCtrl+Alt+Shift+Z：隐藏/恢复小窗\nCtrl+Alt+1..9：显示预设\n\n小窗：拖动中央移动；拖动边缘调整大小；滚轮调透明度；L 开关点击穿透；Esc 隐藏。\n\nWallpaper Engine 未运行时，程序会自动使用 Windows 的静态图片壁纸。所有功能也都可以从托盘右键菜单使用。", "帮助", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    private static void ShowHelp() => MessageBox.Show("WallpaperCrop\n\nCtrl+Alt+Shift+A：框选壁纸区域\nCtrl+Alt+Shift+S：保存最后区域\nCtrl+Alt+Shift+Z：隐藏/恢复小窗\nCtrl+Alt+1..9：显示预设\n\n小窗：拖动中央移动；拖动边缘调整大小；滚轮调透明度；L 开关点击穿透；Esc 隐藏。\n\nWallpaper Engine 未运行时，程序会自动使用 Windows 的静态图片壁纸。所有功能也都可以从托盘右键菜单使用。", "帮助", MessageBoxButtons.OK, MessageBoxIcon.Information);
     private void SaveLastRegion()
     {
-        if (_lastRegion is null) { _tray.ShowBalloonTip(1500, "WallpaperPeek", "请先框选一个壁纸区域。", ToolTipIcon.Info); return; }
+        if (_lastRegion is null) { _tray.ShowBalloonTip(1500, "WallpaperCrop", "请先框选一个壁纸区域。", ToolTipIcon.Info); return; }
         using var dialog = new SaveRegionDialog(_config.Regions.Select(x => x.Slot));
         if (dialog.ShowDialog() != DialogResult.OK) return;
         _config.Regions.RemoveAll(x => x.Slot == dialog.Slot);
@@ -140,7 +140,7 @@ internal sealed class MainForm : Form
         if (_preview is not null) { region.DisplayWidth = _preview.ClientSize.Width; region.DisplayHeight = _preview.ClientSize.Height; }
         _config.Regions.Add(region);
         ConfigStore.Save(_config);
-        _tray.ShowBalloonTip(1500, "WallpaperPeek", $"已保存到 Ctrl+Alt+{dialog.Slot}。", ToolTipIcon.Info);
+        _tray.ShowBalloonTip(1500, "WallpaperCrop", $"已保存到 Ctrl+Alt+{dialog.Slot}。", ToolTipIcon.Info);
     }
     protected override void OnFormClosing(FormClosingEventArgs e) { if (!_exiting) { e.Cancel = true; Hide(); } else { for (var i = 1; i <= 9; i++) NativeMethods.UnregisterHotKey(Handle, i); NativeMethods.UnregisterHotKey(Handle, SelectHotkey); NativeMethods.UnregisterHotKey(Handle, ToggleHotkey); NativeMethods.UnregisterHotKey(Handle, SaveHotkey); _tray.Dispose(); } base.OnFormClosing(e); }
 }

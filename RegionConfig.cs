@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace WallpaperPeek;
+namespace WallpaperCrop;
 
 public sealed class AppConfig
 {
@@ -11,7 +11,7 @@ public sealed class AppConfig
 internal static class StartupService
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "WallpaperPeek";
+    private const string ValueName = "WallpaperCrop";
 
     public static void SetEnabled(bool enabled)
     {
@@ -39,7 +39,7 @@ public sealed class SavedRegion
 
 internal static class ConfigStore
 {
-    private static readonly string Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WallpaperPeek");
+    private static readonly string Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WallpaperCrop");
     private static readonly string FilePath = Path.Combine(Folder, "config.json");
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 

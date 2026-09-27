@@ -1,6 +1,6 @@
-# WallpaperPeek
+# WallpaperCrop
 
-WallpaperPeek 是一个常驻 Windows 托盘的壁纸局部参考工具：从 Wallpaper Engine 的实时桌面画面框选区域，作为可拖动、缩放、置顶的小窗随时查看。
+WallpaperCrop 是一个常驻 Windows 托盘的壁纸局部参考工具：从 Wallpaper Engine 的实时桌面画面框选区域，作为可拖动、缩放、置顶的小窗随时查看。
 
 它适合把壁纸中的公式、课程表、地图、参考图或备忘内容固定在工作区上方，不必切回桌面。Wallpaper Engine 未运行时，工具会自动回退到 Windows 的静态图片壁纸。
 
@@ -8,7 +8,7 @@ WallpaperPeek 是一个常驻 Windows 托盘的壁纸局部参考工具：从 Wa
 
 ## 快速使用
 
-1. 运行 `bin\\WallpaperPeek\\WallpaperPeek.exe`。
+1. 运行 `bin\\WallpaperCrop\\WallpaperCrop.exe`。
 2. 按下框选快捷键，拖拽选择壁纸区域。
 3. 在预览小窗中拖动中央可移动，拖动边或角可自由拉伸；截图会铺满窗口。
 4. 调整到满意的大小后保存为编号预设，以后可一键恢复。
@@ -61,7 +61,7 @@ Program（单实例 Mutex）
         v
 MainForm（隐藏主窗 + 托盘菜单 + 全局快捷键）
    |          |              |
-   |          |              +-- ConfigStore：%APPDATA%\\WallpaperPeek\\config.json
+   |          |              +-- ConfigStore：%APPDATA%\\WallpaperCrop\\config.json
    |          +-- StartupService：当前用户 Run 启动项
    |
    +-- RegionSelector：全屏半透明框选层
@@ -78,7 +78,7 @@ MainForm（隐藏主窗 + 托盘菜单 + 全局快捷键）
 - `RegionSelector.cs` 提供类似截图工具的区域选择交互。
 - `WallpaperService.cs` 优先定位 `wallpaper*.exe` 的全屏渲染窗口并读取实时画面；找不到时按 Windows“填充”模式映射静态壁纸。
 - `PreviewForm.cs` 将截图作为置顶预览，支持移动、任意边/角拉伸、透明度和鼠标穿透。
-- `RegionConfig.cs` 将预设及预览尺寸保存到 `%APPDATA%\\WallpaperPeek\\config.json`。
+- `RegionConfig.cs` 将预设及预览尺寸保存到 `%APPDATA%\\WallpaperCrop\\config.json`。
 
 ## 运行与构建
 
@@ -87,7 +87,7 @@ MainForm（隐藏主窗 + 托盘菜单 + 全局快捷键）
 双击：
 
 ```text
-bin\\WallpaperPeek\\WallpaperPeek.exe
+bin\\WallpaperCrop\\WallpaperCrop.exe
 ```
 
 ### 开发构建
@@ -101,7 +101,7 @@ dotnet build
 ### 发布单文件程序
 
 ```powershell
-dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o .\\bin\\WallpaperPeek
+dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o .\\bin\\WallpaperCrop
 ```
 
-发布完成后，程序位于 `bin\\WallpaperPeek\\WallpaperPeek.exe`。
+发布完成后，程序位于 `bin\\WallpaperCrop\\WallpaperCrop.exe`。

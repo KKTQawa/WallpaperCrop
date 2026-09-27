@@ -1,4 +1,4 @@
-namespace WallpaperPeek;
+namespace WallpaperCrop;
 
 internal sealed class PreviewForm : Form
 {
@@ -12,7 +12,7 @@ internal sealed class PreviewForm : Form
     public PreviewForm(Bitmap image, Size? initialSize = null)
     {
         _image = image;
-        Text = "WallpaperPeek";
+        Text = "WallpaperCrop";
         // A fresh capture appears at the exact pixel dimensions the user selected.
         ClientSize = initialSize is { Width: >= 80, Height: >= 80 } saved ? saved : image.Size;
         MinimumSize = new Size(80, 80);

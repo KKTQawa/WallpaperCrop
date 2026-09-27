@@ -1,4 +1,4 @@
-namespace WallpaperPeek;
+namespace WallpaperCrop;
 
 internal sealed class RegionSelector : Form
 {
