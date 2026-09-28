@@ -88,17 +88,26 @@ internal sealed class MainForm : Form
         _preview = new PreviewForm(image, initialSize);
         _preview.Show();
     }
-    private void ShowSlot(int slot)
+    private async void ShowSlot(int slot)
     {
         var region = _config.Regions.FirstOrDefault(x => x.Slot == slot);
         if (region is null) { _tray.ShowBalloonTip(1500, "WallpaperCrop", $"编号 {slot} 还没有保存区域。", ToolTipIcon.Info); return; }
+        var previewWasVisible = _preview?.Visible == true;
+        if (previewWasVisible) _preview!.Hide();
         try
         {
             _lastRegion = WallpaperService.Denormalize(region);
             var savedSize = region.DisplayWidth >= 80 && region.DisplayHeight >= 80 ? new Size(region.DisplayWidth, region.DisplayHeight) : (Size?)null;
+            // Do not let the previous topmost preview become part of the composed
+            // desktop capture. Its removal is asynchronous from DWM's perspective.
+            await Task.Delay(80);
             ShowImage(WallpaperService.CaptureDesktopRegion(_lastRegion.Value), savedSize);
         }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "WallpaperCrop", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception ex)
+        {
+            if (previewWasVisible && _preview is not null) _preview.Show();
+            MessageBox.Show(ex.Message, "WallpaperCrop", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
     private void TogglePreview()
     {
