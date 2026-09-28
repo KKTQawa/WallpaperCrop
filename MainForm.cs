@@ -52,8 +52,29 @@ internal sealed class MainForm : Form
     }
     private void StartSelection()
     {
+        if (Application.OpenForms.OfType<RegionSelector>().Any()) return;
+
+        // A previous preview is a topmost window and would otherwise be included in
+        // the desktop-compositor capture. Restore it if the user cancels selection.
+        var previewWasVisible = _preview?.Visible == true;
+        if (previewWasVisible) _preview!.Hide();
+
         var selector = new RegionSelector();
-        selector.RegionSelected += ShowRegion;
+        var regionWasSelected = false;
+        selector.RegionSelected += async region =>
+        {
+            regionWasSelected = true;
+            // Hiding a layered topmost form is asynchronous from DWM's point of
+            // view. Give the compositor one presentation interval before reading
+            // the screen, otherwise its black selection surface can be captured.
+            await Task.Delay(80);
+            ShowRegion(region);
+        };
+        selector.FormClosed += (_, _) =>
+        {
+            if (!regionWasSelected && previewWasVisible && _preview is not null)
+                _preview.Show();
+        };
         selector.Show(); selector.Activate();
     }
     private void ShowRegion(Rectangle region)

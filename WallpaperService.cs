@@ -1,21 +1,39 @@
 using System.Drawing.Drawing2D;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace WallpaperCrop;
 
 internal static class WallpaperService
 {
-    // Wallpaper Engine renders into the desktop's WorkerW host. Capturing that host
-    // avoids taking a screenshot of foreground apps covering the wallpaper.
+    // The desktop compositor is the only capture source that consistently includes
+    // GPU-rendered live wallpapers. Reading Wallpaper Engine's HWND/DC directly can
+    // succeed while returning an all-black bitmap (a common DirectX surface behavior).
+    // RegionSelector is hidden before this method is called, so the composed desktop
+    // contains the wallpaper rather than the selection overlay.
     public static Bitmap CaptureDesktopRegion(Rectangle screenRegion)
     {
-        var engineWindow = FindWallpaperEngineRenderWindow(screenRegion);
-        if (engineWindow != IntPtr.Zero)
-            return CropWindowDc(engineWindow, screenRegion);
+        try { return CaptureComposedDesktopRegion(screenRegion); }
+        catch (Exception ex) when (ex is ExternalException or ArgumentException)
+        {
+            // Keep the static-wallpaper fallback for unusual desktops where the
+            // screen DC cannot be read (for example, a disconnected remote session).
+            return CropStaticWallpaperFill(screenRegion);
+        }
+    }
 
-        try { return CropDesktopCapture(screenRegion); }
-        catch (InvalidOperationException) { return CropStaticWallpaperFill(screenRegion); }
+    private static Bitmap CaptureComposedDesktopRegion(Rectangle screenRegion)
+    {
+        var screen = Screen.PrimaryScreen!.Bounds;
+        var crop = Rectangle.Intersect(screenRegion, screen);
+        if (crop.Width < 1 || crop.Height < 1)
+            throw new ArgumentException("选择区域不在主显示器内。", nameof(screenRegion));
+
+        var result = new Bitmap(crop.Width, crop.Height);
+        using var graphics = Graphics.FromImage(result);
+        graphics.CopyFromScreen(crop.Location, Point.Empty, crop.Size, CopyPixelOperation.SourceCopy);
+        return result;
     }
 
     // Wallpaper Engine owns a fullscreen child window of the desktop host. Capturing
