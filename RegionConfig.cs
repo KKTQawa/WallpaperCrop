@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Drawing.Imaging;
 
 namespace WallpaperCrop;
 
@@ -35,12 +36,16 @@ public sealed class SavedRegion
     public float Height { get; set; }
     public int DisplayWidth { get; set; }
     public int DisplayHeight { get; set; }
+    // File name of the frozen image captured when this preset was saved.
+    // Older configurations do not contain this value and remain readable.
+    public string? CaptureFile { get; set; }
 }
 
 internal static class ConfigStore
 {
     private static readonly string Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WallpaperCrop");
     private static readonly string FilePath = Path.Combine(Folder, "config.json");
+    private static readonly string CaptureFolder = Path.Combine(Folder, "captures");
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
     public static AppConfig Load()
@@ -52,5 +57,29 @@ internal static class ConfigStore
     {
         Directory.CreateDirectory(Folder);
         File.WriteAllText(FilePath, JsonSerializer.Serialize(config, Options));
+    }
+    public static string SaveCapture(int slot, Image image)
+    {
+        Directory.CreateDirectory(CaptureFolder);
+        var fileName = $"slot-{slot}.png";
+        image.Save(Path.Combine(CaptureFolder, fileName), ImageFormat.Png);
+        return fileName;
+    }
+    public static Bitmap? LoadCapture(SavedRegion region)
+    {
+        if (string.IsNullOrWhiteSpace(region.CaptureFile)) return null;
+        var fileName = Path.GetFileName(region.CaptureFile);
+        var path = Path.Combine(CaptureFolder, fileName);
+        if (!File.Exists(path)) return null;
+        try
+        {
+            using var source = new Bitmap(path);
+            return new Bitmap(source);
+        }
+        catch (Exception) { return null; }
+    }
+    public static void DeleteCaptures()
+    {
+        if (Directory.Exists(CaptureFolder)) Directory.Delete(CaptureFolder, true);
     }
 }

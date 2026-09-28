@@ -9,6 +9,7 @@ internal sealed class MainForm : Form
     private readonly AppConfig _config = ConfigStore.Load();
     private PreviewForm? _preview;
     private Rectangle? _lastRegion;
+    private Bitmap? _lastCapture;
     private bool _exiting;
     private bool _changingStartup;
 
@@ -79,7 +80,14 @@ internal sealed class MainForm : Form
     }
     private void ShowRegion(Rectangle region)
     {
-        try { _lastRegion = region; ShowImage(WallpaperService.CaptureDesktopRegion(region)); }
+        try
+        {
+            _lastRegion = region;
+            var image = WallpaperService.CaptureDesktopRegion(region);
+            _lastCapture?.Dispose();
+            _lastCapture = (Bitmap)image.Clone();
+            ShowImage(image);
+        }
         catch (Exception ex) { MessageBox.Show(ex.Message, "WallpaperCrop", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
     private void ShowImage(Bitmap image, Size? initialSize = null)
@@ -92,6 +100,16 @@ internal sealed class MainForm : Form
     {
         var region = _config.Regions.FirstOrDefault(x => x.Slot == slot);
         if (region is null) { _tray.ShowBalloonTip(1500, "WallpaperCrop", $"编号 {slot} 还没有保存区域。", ToolTipIcon.Info); return; }
+        var savedCapture = ConfigStore.LoadCapture(region);
+        if (savedCapture is not null)
+        {
+            _lastRegion = WallpaperService.Denormalize(region);
+            _lastCapture?.Dispose();
+            _lastCapture = (Bitmap)savedCapture.Clone();
+            var savedSize = region.DisplayWidth >= 80 && region.DisplayHeight >= 80 ? new Size(region.DisplayWidth, region.DisplayHeight) : (Size?)null;
+            ShowImage(savedCapture, savedSize);
+            return;
+        }
         var previewWasVisible = _preview?.Visible == true;
         if (previewWasVisible) _preview!.Hide();
         try
@@ -101,7 +119,10 @@ internal sealed class MainForm : Form
             // Do not let the previous topmost preview become part of the composed
             // desktop capture. Its removal is asynchronous from DWM's perspective.
             await Task.Delay(80);
-            ShowImage(WallpaperService.CaptureDesktopRegion(_lastRegion.Value), savedSize);
+            var image = WallpaperService.CaptureDesktopRegion(_lastRegion.Value);
+            _lastCapture?.Dispose();
+            _lastCapture = (Bitmap)image.Clone();
+            ShowImage(image, savedSize);
         }
         catch (Exception ex)
         {
@@ -148,6 +169,7 @@ internal sealed class MainForm : Form
             StartupService.SetEnabled(false);
             _config.StartWithWindows = false;
             _config.Regions.Clear();
+            ConfigStore.DeleteCaptures();
             ConfigStore.Save(_config);
             _changingStartup = true;
             _startupMenu.Checked = false;
@@ -163,16 +185,18 @@ internal sealed class MainForm : Form
     private void SaveLastRegion()
     {
         if (_lastRegion is null) { _tray.ShowBalloonTip(1500, "WallpaperCrop", "请先框选一个壁纸区域。", ToolTipIcon.Info); return; }
+        if (_lastCapture is null) { _tray.ShowBalloonTip(1500, "WallpaperCrop", "没有可保存的截图，请先重新框选区域。", ToolTipIcon.Info); return; }
         using var dialog = new SaveRegionDialog(_config.Regions.Select(x => x.Slot));
         if (dialog.ShowDialog() != DialogResult.OK) return;
         _config.Regions.RemoveAll(x => x.Slot == dialog.Slot);
         var region = WallpaperService.Normalize(_lastRegion.Value, dialog.Slot, dialog.RegionName);
         if (_preview is not null) { region.DisplayWidth = _preview.ClientSize.Width; region.DisplayHeight = _preview.ClientSize.Height; }
+        region.CaptureFile = ConfigStore.SaveCapture(dialog.Slot, _lastCapture);
         _config.Regions.Add(region);
         ConfigStore.Save(_config);
         _tray.ShowBalloonTip(1500, "WallpaperCrop", $"已保存到 Ctrl+Alt+{dialog.Slot}。", ToolTipIcon.Info);
     }
-    protected override void OnFormClosing(FormClosingEventArgs e) { if (!_exiting) { e.Cancel = true; Hide(); } else { for (var i = 1; i <= 9; i++) NativeMethods.UnregisterHotKey(Handle, i); NativeMethods.UnregisterHotKey(Handle, SelectHotkey); NativeMethods.UnregisterHotKey(Handle, ToggleHotkey); NativeMethods.UnregisterHotKey(Handle, SaveHotkey); _tray.Dispose(); } base.OnFormClosing(e); }
+    protected override void OnFormClosing(FormClosingEventArgs e) { if (!_exiting) { e.Cancel = true; Hide(); } else { for (var i = 1; i <= 9; i++) NativeMethods.UnregisterHotKey(Handle, i); NativeMethods.UnregisterHotKey(Handle, SelectHotkey); NativeMethods.UnregisterHotKey(Handle, ToggleHotkey); NativeMethods.UnregisterHotKey(Handle, SaveHotkey); _lastCapture?.Dispose(); _tray.Dispose(); } base.OnFormClosing(e); }
 }
 
 internal sealed class SaveRegionDialog : Form
